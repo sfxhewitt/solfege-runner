@@ -27,6 +27,10 @@ var capture_bus := "Capture"
 var capture_effect: AudioEffectCapture
 var sample_rate := 48000
 var last_pitch := 0.0
+var pitch_history: Array = []
+var pitch_history_size := 5
+var min_rms := 0.01
+var min_corr_ratio := 0.15
 
 # Motion / bounce
 var player_y_vel := 0.0
@@ -191,7 +195,23 @@ func _detect_pitch() -> float:
 	samples.resize(data.size())
 	for i in range(data.size()):
 		samples[i] = data[i].x
-	return _autocorrelation_pitch(samples, sample_rate)
+	# Noise gate via RMS
+	var rms := 0.0
+	for s in samples:
+		rms += s * s
+	rms = sqrt(rms / max(1.0, float(samples.size())))
+	if rms < min_rms:
+		return 0.0
+	var detected = _autocorrelation_pitch(samples, sample_rate)
+	if detected > 0:
+		pitch_history.append(detected)
+		if pitch_history.size() > pitch_history_size:
+			pitch_history.pop_front()
+		# Median filter for stability
+		var sorted = pitch_history.duplicate()
+		sorted.sort()
+		return float(sorted[sorted.size() / 2])
+	return 0.0
 
 func _autocorrelation_pitch(samples: PackedFloat32Array, rate: int) -> float:
 	var size = samples.size()
@@ -202,8 +222,10 @@ func _autocorrelation_pitch(samples: PackedFloat32Array, rate: int) -> float:
 	for s in samples:
 		mean += s
 	mean /= size
+	var energy = 0.0
 	for i in range(size):
 		samples[i] -= mean
+		energy += samples[i] * samples[i]
 	# Autocorrelation
 	var max_lag = int(rate / 60) # ~60 Hz low bound
 	var min_lag = int(rate / 1000) # ~1kHz high bound
@@ -216,7 +238,10 @@ func _autocorrelation_pitch(samples: PackedFloat32Array, rate: int) -> float:
 		if sum > best_val:
 			best_val = sum
 			best_lag = lag
-	if best_lag == 0:
+	if best_lag == 0 or energy <= 0.0:
+		return 0.0
+	# Confidence check
+	if (best_val / energy) < min_corr_ratio:
 		return 0.0
 	return float(rate) / float(best_lag)
 

@@ -1,0 +1,35 @@
+[gd_scene format=3]
+
+[node name="Results" type="Control"]
+anchor_left = 0
+anchor_top = 0
+anchor_right = 1
+anchor_bottom = 1
+
+[node name="TitleLabel" type="Label" parent="."]
+anchor_left = 0.1
+anchor_top = 0.1
+anchor_right = 0.9
+anchor_bottom = 0.2
+text = "Results"
+
+[node name="ScoreLabel" type="Label" parent="."]
+anchor_left = 0.1
+anchor_top = 0.25
+anchor_right = 0.9
+anchor_bottom = 0.35
+text = "Score: 0000"
+
+[node name="RetryButton" type="Button" parent="."]
+anchor_left = 0.35
+anchor_top = 0.55
+anchor_right = 0.65
+anchor_bottom = 0.63
+text = "Retry"
+
+[node name="MenuButton" type="Button" parent="."]
+anchor_left = 0.35
+anchor_top = 0.66
+anchor_right = 0.65
+anchor_bottom = 0.74
+text = "Menu"
